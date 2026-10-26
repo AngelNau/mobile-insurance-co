@@ -1,0 +1,12 @@
+{
+  "id": "X05",
+  "source": "custom",
+  "message": "Policy POL-9999. On 12 June 2026 my Samsung Galaxy S24 phone fell into the sea. I claim €400.",
+  "follow_ups": [],
+  "expected": {
+    "decision": "REJECTED",
+    "payout": 0,
+    "article": 1,
+    "assessor_decision": null
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "id": "C03",
+  "source": "provided",
+  "message": "I have policy POL-1002. On 20 July 2026 my MacBook Air M2 fell off the table and the casing cracked. Repair €400.",
+  "follow_ups": [],
+  "expected": {
+    "decision": "REJECTED",
+    "payout": 0,
+    "article": 2,
+    "assessor_decision": null
+  }
+}

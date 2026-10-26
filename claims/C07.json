@@ -1,0 +1,12 @@
+{
+  "id": "C07",
+  "source": "provided",
+  "message": "Policy POL-1005. On 1 February 2026 my Xiaomi Redmi Note 13 fell in the bathroom and the screen cracked. Repair €150.",
+  "follow_ups": [],
+  "expected": {
+    "decision": "REJECTED",
+    "payout": 0,
+    "article": 12,
+    "assessor_decision": null
+  }
+}

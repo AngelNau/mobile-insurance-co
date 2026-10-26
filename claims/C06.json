@@ -1,0 +1,12 @@
+{
+  "id": "C06",
+  "source": "provided",
+  "message": "Policy POL-1004. On 10 April 2026 someone broke into my car (smashed window) and stole my Lenovo ThinkPad X1 Carbon. I reported the theft to the police. A new laptop costs €1500.",
+  "follow_ups": [],
+  "expected": {
+    "decision": "ESCALATION",
+    "payout": 1180,
+    "article": 10,
+    "assessor_decision": "approve"
+  }
+}

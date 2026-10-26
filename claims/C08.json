@@ -1,0 +1,12 @@
+{
+  "id": "C08",
+  "source": "provided",
+  "message": "Policy POL-1001. Since 1 July 2026 the battery of my Samsung Galaxy S24 drains very quickly; due to wear it only lasts half a day. A battery replacement costs €120.",
+  "follow_ups": [],
+  "expected": {
+    "decision": "REJECTED",
+    "payout": 0,
+    "article": 6,
+    "assessor_decision": null
+  }
+}

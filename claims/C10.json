@@ -1,0 +1,12 @@
+{
+  "id": "C10",
+  "source": "provided",
+  "message": "Policy POL-1003. On 5 October 2026 my iPad Air fell off the couch and the screen cracked. Repair €300.",
+  "follow_ups": [],
+  "expected": {
+    "decision": "REJECTED",
+    "payout": 0,
+    "article": 1,
+    "assessor_decision": null
+  }
+}

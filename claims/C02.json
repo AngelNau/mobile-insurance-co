@@ -1,0 +1,12 @@
+{
+  "id": "C02",
+  "source": "provided",
+  "message": "Policy POL-1002. On 15 March 2026 I spilled coffee on my MacBook Air M2 and it no longer turns on. The service centre estimated the repair at €600.",
+  "follow_ups": [],
+  "expected": {
+    "decision": "APPROVED",
+    "payout": 500,
+    "article": 4,
+    "assessor_decision": null
+  }
+}

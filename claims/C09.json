@@ -1,0 +1,14 @@
+{
+  "id": "C09",
+  "source": "provided",
+  "message": "Hello, my Samsung Galaxy S24 phone fell and the screen cracked. The repair costs €180.",
+  "follow_ups": [
+    "The policy number is POL-1001, it happened on 3 August 2026."
+  ],
+  "expected": {
+    "decision": "APPROVED",
+    "payout": 130,
+    "article": 3,
+    "assessor_decision": null
+  }
+}

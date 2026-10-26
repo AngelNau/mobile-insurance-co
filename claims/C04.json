@@ -1,0 +1,12 @@
+{
+  "id": "C04",
+  "source": "provided",
+  "message": "Policy POL-1001. On 2 May 2026 I left my Samsung Galaxy S24 on the bus and never found it again. Please reimburse €700.",
+  "follow_ups": [],
+  "expected": {
+    "decision": "REJECTED",
+    "payout": 0,
+    "article": 5,
+    "assessor_decision": null
+  }
+}

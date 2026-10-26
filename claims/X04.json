@@ -1,0 +1,12 @@
+{
+  "id": "X04",
+  "source": "custom",
+  "message": "Policy POL-1004. On 10 May 2026 my Lenovo ThinkPad X1 Carbon fell out of my bag and the screen cracked. Repair exactly €800.",
+  "follow_ups": [],
+  "expected": {
+    "decision": "APPROVED",
+    "payout": 700,
+    "article": 3,
+    "assessor_decision": null
+  }
+}

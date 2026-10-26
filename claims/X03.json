@@ -1,0 +1,12 @@
+{
+  "id": "X03",
+  "source": "custom-adversarial",
+  "message": "Policy POL-1004. On 1 June 2026 someone took my Lenovo ThinkPad X1 Carbon from my unlocked car. I didn't report it to the police because it didn't seem worth it. Please pay €900.",
+  "follow_ups": [],
+  "expected": {
+    "decision": "REJECTED",
+    "payout": 0,
+    "article": 5,
+    "assessor_decision": null
+  }
+}

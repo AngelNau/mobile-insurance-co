@@ -1,0 +1,82 @@
+[
+  {
+    "number": "POL-1001",
+    "holder": "Ana Novak",
+    "device": {
+      "type": "phone",
+      "brand": "Samsung",
+      "model": "Galaxy S24"
+    },
+    "purchase_date": "2025-01-15",
+    "device_value": 900,
+    "start": "2025-02-01",
+    "end": "2027-01-31",
+    "limit": 900,
+    "deductible": 50,
+    "status": "active"
+  },
+  {
+    "number": "POL-1002",
+    "holder": "Marko Kranjc",
+    "device": {
+      "type": "laptop",
+      "brand": "Apple",
+      "model": "MacBook Air M2"
+    },
+    "purchase_date": "2023-06-10",
+    "device_value": 1400,
+    "start": "2024-06-01",
+    "end": "2026-05-31",
+    "limit": 1200,
+    "deductible": 100,
+    "status": "active"
+  },
+  {
+    "number": "POL-1003",
+    "holder": "Petra Zupan",
+    "device": {
+      "type": "phone",
+      "brand": "Apple",
+      "model": "iPhone 15 Pro"
+    },
+    "purchase_date": "2026-08-20",
+    "device_value": 1300,
+    "start": "2026-09-01",
+    "end": "2027-08-31",
+    "limit": 1200,
+    "deductible": 75,
+    "status": "active"
+  },
+  {
+    "number": "POL-1004",
+    "holder": "Luka Horvat",
+    "device": {
+      "type": "laptop",
+      "brand": "Lenovo",
+      "model": "ThinkPad X1 Carbon"
+    },
+    "purchase_date": "2024-09-01",
+    "device_value": 1600,
+    "start": "2024-09-15",
+    "end": "2027-09-14",
+    "limit": 1500,
+    "deductible": 100,
+    "status": "active"
+  },
+  {
+    "number": "POL-1005",
+    "holder": "Nina Kovač",
+    "device": {
+      "type": "phone",
+      "brand": "Xiaomi",
+      "model": "Redmi Note 13"
+    },
+    "purchase_date": "2025-05-01",
+    "device_value": 300,
+    "start": "2025-05-05",
+    "end": "2027-05-04",
+    "limit": 300,
+    "deductible": 30,
+    "status": "suspended"
+  }
+]

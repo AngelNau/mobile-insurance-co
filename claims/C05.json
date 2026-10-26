@@ -1,0 +1,12 @@
+{
+  "id": "C05",
+  "source": "provided",
+  "message": "POL-1003: on 20 September 2026 my iPhone 15 Pro fell on the stairs, the back and the camera are broken. Repair cost €350.",
+  "follow_ups": [],
+  "expected": {
+    "decision": "ESCALATION",
+    "payout": 275,
+    "article": 10,
+    "assessor_decision": "approve"
+  }
+}
