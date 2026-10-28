@@ -36,6 +36,22 @@ Every decision comes with a reason that cites an article of the terms.
 
 ## Running
 
+### With Docker
+
+Needs only Docker with the Compose plugin. Compose starts Ollama 0.40.11, pulls `llama3.2` into a named volume (only on the first run), and runs the agent.
+
+```bash
+docker compose run --rm app              # interactive CLI
+docker compose run --rm app eval         # evaluation -> eval_results.md
+docker compose run --rm app mermaid      # graph diagram -> agent_graph.png
+docker compose run --rm app eval --remote
+docker compose down                      # stop Ollama (add -v to also delete the downloaded model)
+```
+
+The project directory is mounted into the container, so output files land in the repo and `.env` is picked up for `--remote`. To use an NVIDIA GPU, uncomment the `deploy` block in [docker-compose.yml](docker-compose.yml).
+
+### Without Docker
+
 To run the code, you first need to install the dependencies listed in [requirements.txt](requirements.txt).
 
 ```bash
