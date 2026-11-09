@@ -76,6 +76,11 @@ def _words(text: str) -> set[str]:
     return set(re.findall(r"[a-z0-9]+", text.lower()))
 
 
+def _join_model_numbers(text: str) -> str:
+    # "S 24" and "s-24" -> "s24": a single letter split from its number is one model token.
+    return re.sub(r"\b([a-z])[\s-]+(?=\d)", r"\1", text.lower())
+
+
 # ---------------------------------------------------------------- intake
 
 class ClaimData(BaseModel):
@@ -149,8 +154,9 @@ def _sanitize(data: dict, text: str) -> dict:
     data["event_date"] = _ground(data.get("event_date"), _dates_in_text(text))
     data["amount"] = _ground(data.get("amount"), _amounts_in_text(text))
     if data.get("device"):
-        text_words = _words(text)
-        data["device"] = " ".join(w for w in data["device"].split() if _words(w) & text_words) or None
+        text_words = _words(text) | _words(_join_model_numbers(text))
+        data["device"] = " ".join(w for w in data["device"].split()
+                                  if _words(_join_model_numbers(w)) & text_words) or None
     return data
 
 
@@ -200,7 +206,30 @@ def route_after_intake(state: ClaimState) -> Literal["ask_missing", "check_polic
 
 # ---------------------------------------------------------------- policy check
 
-GENERIC_WORDS = {"phone", "smartphone", "mobile", "cell", "laptop", "notebook", "computer", "device", "my", "new"}
+GENERIC_WORDS = {"phone", "smartphone", "mobile", "cell", "laptop", "notebook", "computer", "device", "my", "new",
+                 "5g", "4g", "lte"}
+# Words that tell variants of one model apart ("iPhone 15" vs "iPhone 15 Pro", "Galaxy S24" vs "Galaxy S24 Ultra").
+VARIANT_WORDS = {"pro", "max", "plus", "ultra", "mini", "air", "lite", "fe", "edge", "fold", "flip", "note",
+                 "carbon", "nano", "yoga", "slim"}
+STORAGE_RE = re.compile(r"^\d+(?:gb|tb)$")
+
+
+def _model_tokens(text: str) -> set[str]:
+    return {w for w in _words(_join_model_numbers(text)) - GENERIC_WORDS if not STORAGE_RE.match(w)}
+
+
+def _identifies_model(token: str) -> bool:
+    return any(ch.isdigit() for ch in token) or token in VARIANT_WORDS
+
+
+def device_matches(claimed: str, insured: dict) -> bool:
+    """Brand and series words are optional, but every model number and variant word of the insured device
+    must be in the claim, and the claim may not name a model number or variant the policy doesn't have."""
+    insured_tokens = _model_tokens(f"{insured['brand']} {insured['model']}")
+    claimed_tokens = _model_tokens(claimed)
+    required = {t for t in insured_tokens if _identifies_model(t)}
+    foreign = {t for t in claimed_tokens - insured_tokens if _identifies_model(t)}
+    return bool(claimed_tokens & insured_tokens) and required <= claimed_tokens and not foreign
 
 
 def completed_years(start: date, end: date) -> int:
@@ -225,10 +254,9 @@ def check_policy_tool(policy_number: str, event_date: str, device: str = "", dev
         errors.append([2, f"Incident on {event} is outside the coverage period {start} – {end}."])
 
     insured = policy["device"]
-    claimed_words = _words(device) - GENERIC_WORDS
     # llama3.2 often gets device_type wrong, so brand/model wins and the type is only used when no model is named.
-    if claimed_words:
-        mismatch = not claimed_words & _words(f"{insured['brand']} {insured['model']}")
+    if _model_tokens(device):
+        mismatch = not device_matches(device, insured)
     else:
         mismatch = bool(device_type and device_type != insured["type"])
     if mismatch:

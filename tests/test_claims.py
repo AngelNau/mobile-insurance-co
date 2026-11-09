@@ -48,6 +48,20 @@ def test_a15_claim_on_s24_policy_is_rejected(fake_llm, run):
     assert unused_answers(fake) == ["CoverageResult"]
 
 
+def test_hyphenated_model_in_claim_still_matches_end_to_end(fake_llm, run):
+    """The claim writes "S-24", the model normalises it to "S24": intake must not drop it as an unseen word."""
+    message = ("Policy POL-1001. On 10 June 2026 my Galaxy S-24 fell on the pavement and the screen cracked. "
+               "The repair costs €250.")
+    fake_llm(
+        claim_data(policy_number="POL-1001", device="Samsung Galaxy S24", device_type="phone",
+                   event_date="2026-06-10", damage_type="physical_damage",
+                   description="The phone fell and the screen cracked.", amount=250),
+        coverage(3, True),
+    )
+    r = run(message)
+    assert (r["system_decision"], r["payout"], r["article"]) == (main.APPROVED, 200, 3)
+
+
 def _device_errors(policy_number: str, device: str) -> list:
     # The incident is dated on the policy's start date, so the only error the check can report is about the device.
     start = next(p["start"] for p in json.loads(main.POLICIES_PATH.read_text()) if p["number"] == policy_number)
@@ -63,6 +77,8 @@ def _device_errors(policy_number: str, device: str) -> list:
     ("POL-1001", "samsung galaxy s24"),
     ("POL-1001", "S24"),
     ("POL-1001", "Galaxy S-24"),
+    ("POL-1001", "Samsung Galaxy S24 5G"),
+    ("POL-1001", "Samsung Galaxy S24 128GB"),
     ("POL-1003", "iPhone 15 Pro"),
 ])
 def test_device_spelling_variants_are_accepted(policy_number, device):
