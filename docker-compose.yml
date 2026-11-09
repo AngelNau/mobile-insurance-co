@@ -46,5 +46,16 @@ services:
       ollama-pull:
         condition: service_completed_successfully
 
+  # Runs pytest with the fake LLM, so it needs neither the ollama service nor the model.
+  tests:
+    build: .
+    entrypoint: ["python", "-m", "pytest"]
+    command: []
+    volumes:
+      - .:/app
+    user: "${UID:-1000}:${GID:-1000}"
+    # Only started by `docker compose run tests`, never by a plain `docker compose up`.
+    profiles: ["tests"]
+
 volumes:
   ollama:

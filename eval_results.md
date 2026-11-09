@@ -4,9 +4,9 @@ Model: `ollama:llama3.2`
 
 | Metric | Result |
 |---|---|
-| Decision accuracy | 15/15 (100%) |
-| Payout correctness | 15/15 (100%) |
-| Cited article correctness | 15/15 (100%) |
+| Decision accuracy | 17/17 (100%) |
+| Payout correctness | 17/17 (100%) |
+| Cited article correctness | 17/17 (100%) |
 
 | ID | Source | Expected | Got | Decision | Payout | Article |
 |---|---|---|---|---|---|---|
@@ -25,6 +25,8 @@ Model: `ollama:llama3.2`
 | X03 | custom-adversarial | REJECTED €0 Art. 5 | REJECTED €0.0 Art. 5 | ✓ | ✓ | ✓ |
 | X04 | custom | APPROVED €700 Art. 3 | APPROVED €700.0 Art. 3 | ✓ | ✓ | ✓ |
 | X05 | custom | REJECTED €0 Art. 1 | REJECTED €0.0 Art. 1 | ✓ | ✓ | ✓ |
+| X06 | custom | REJECTED €0 Art. 1 | REJECTED €0.0 Art. 1 | ✓ | ✓ | ✓ |
+| X07 | custom | APPROVED €0 Art. 3 | APPROVED €0.0 Art. 3 | ✓ | ✓ | ✓ |
 
 ## Failed cases (diagnostics)
 
