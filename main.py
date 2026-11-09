@@ -377,16 +377,19 @@ def check_coverage(state: ClaimState):
         print(f"[coverage] LLM error: {e}")
         coverage = {"reasoning": f"Model error: {e}", "article": articles[0]["article"], "covered": None}
 
-    # llama3.2 cites articles it was never shown and contradicts itself ("covered under Article 3",
-    # covered=false). The cited article must be a retrieved one, and a pure cover/exclusion article
-    # fixes the verdict; only the mixed article relies on the model.
     retrieved = [a["article"] for a in articles]
+    coverage["retrieved_articles"] = retrieved
+    # llama3.2 cites articles it was never shown. Such an answer is not grounded in the context, so its
+    # verdict is discarded and decide() escalates the claim to an assessor instead of guessing an article.
     if coverage["article"] not in retrieved:
-        coverage["article"] = retrieved[0]
+        coverage["invalid_citation"] = coverage["article"]
+        coverage["covered"] = None
+        return {"coverage": coverage}
+    # It also contradicts itself ("covered under Article 3", covered=false): a pure cover/exclusion
+    # article fixes the verdict; only the mixed article relies on the model.
     role = COVERAGE_ARTICLES[coverage["article"]]
     if role != "mixed" and coverage["covered"] is not None:
         coverage["covered"] = role == "cover"
-    coverage["retrieved_articles"] = retrieved
     return {"coverage": coverage}
 
 
@@ -437,10 +440,16 @@ def decide(state: ClaimState):
         reasons.append(f"amount €{c['amount']} exceeds €{ESCALATION_AMOUNT}")
     if pc["days_since_start"] < ESCALATION_DAYS:
         reasons.append(f"incident {pc['days_since_start']} days after policy start (< {ESCALATION_DAYS})")
-    if coverage["covered"] is None:
+    if "invalid_citation" in coverage:
+        reasons.append(f"model cited Article {coverage['invalid_citation']}, which is not in the retrieved "
+                       f"context (Articles {', '.join(map(str, coverage['retrieved_articles']))})")
+    elif coverage["covered"] is None:
         reasons.append("coverage could not be checked automatically")
 
-    basis = f"Covered under Article {coverage['article']}: {coverage['reasoning']} {calc_text}"
+    if coverage["covered"] is None:
+        basis = f"Coverage not verified (model: {coverage['reasoning']}) {calc_text}"
+    else:
+        basis = f"Covered under Article {coverage['article']}: {coverage['reasoning']} {calc_text}"
     if reasons:
         return {"decision": ESCALATION, "system_decision": ESCALATION, "payout": calc["payout"],
                 "calculation": calc, "article": 10, "escalation_reasons": reasons,
