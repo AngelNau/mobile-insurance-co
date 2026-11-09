@@ -96,3 +96,45 @@ def test_device_spelling_variants_are_accepted(policy_number, device):
 ])
 def test_other_models_of_the_same_brand_are_rejected(policy_number, device):
     assert _device_errors(policy_number, device) == [1]
+
+
+# ---------------------------------------------------------------- citation outside the retrieved context
+#
+# The coverage LLM only sees the articles BM25 retrieved, so a citation of any other article is not grounded
+# in what the model read. Expected: the model's verdict is discarded (covered=None), the bad citation is
+# recorded, and the claim is ESCALATED to an assessor (Article 10) with that reason. A person decides,
+# instead of the system approving or rejecting on a hallucination.
+# Current behaviour: check_coverage silently replaces the citation with the top retrieved article
+# (Article 3 for a drop), whose role then forces covered=True, so the claim is APPROVED automatically.
+
+C01_MESSAGE = ("Hello, policy number POL-1001. On 10 June 2026 my Samsung Galaxy S24 fell on the pavement and "
+               "the screen cracked. The repair costs €250.")
+C01_CLAIM = dict(policy_number="POL-1001", device="Samsung Galaxy S24", device_type="phone",
+                 event_date="2026-06-10", damage_type="physical_damage",
+                 description="The phone fell and the screen cracked.", amount=250)
+
+
+def _retrieved_for_c01() -> list[int]:
+    query = f"{main.DAMAGE_QUERY['physical_damage']} {C01_CLAIM['description']} {C01_MESSAGE}"
+    return [a["article"] for a in main.retrieve_articles(query)]
+
+
+def _not_retrieved_coverage_article() -> int:
+    return next(a for a in main.COVERAGE_ARTICLES if a not in _retrieved_for_c01())
+
+
+# not_retrieved: a coverage article (3–6) that exists but was not in the context.
+# 7: a real article that is never part of the coverage context. 99: an article that does not exist.
+@pytest.mark.parametrize("cited", ["not_retrieved", 7, 99])
+def test_citation_outside_context_is_escalated(fake_llm, run, cited):
+    cited = _not_retrieved_coverage_article() if cited == "not_retrieved" else cited
+    fake_llm(claim_data(**C01_CLAIM),
+             coverage(cited, True, f"Covered under Article {cited}."))
+
+    r = run(C01_MESSAGE, assessor="reject")
+
+    assert (r["system_decision"], r["article"]) == (main.ESCALATION, 10)
+    assert r["coverage"]["invalid_citation"] == cited
+    assert any(f"Article {cited}" in reason and "retrieved" in reason for reason in r["escalation_reasons"])
+    # The assessor has the last word: here they reject, so nothing is paid out.
+    assert (r["decision"], r["payout"]) == (main.REJECTED, 0)
