@@ -18,6 +18,7 @@ httpcore2==2.16.0
 httpx==0.28.1
 httpx2==2.16.0
 idna==3.20
+iniconfig==2.3.1
 ipython==9.17.1
 ipython_pygments_lexers==1.1.1
 jedi==0.20.1
@@ -43,6 +44,7 @@ ormsgpack==1.13.0
 packaging==26.3
 parso==0.8.7
 pexpect==4.9.0
+pluggy==1.7.0
 prompt_toolkit==3.0.53
 psutil==7.2.2
 ptyprocess==0.7.0
@@ -53,6 +55,7 @@ pycparser==3.12
 pydantic==2.14.1
 pydantic_core==2.50.1
 Pygments==2.21.0
+pytest==9.2.0
 python-dotenv==1.2.4
 PyYAML==6.0.3
 requests==2.34.2

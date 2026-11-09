@@ -76,6 +76,11 @@ def _words(text: str) -> set[str]:
     return set(re.findall(r"[a-z0-9]+", text.lower()))
 
 
+def _join_model_numbers(text: str) -> str:
+    # "S 24" and "s-24" -> "s24": a single letter split from its number is one model token.
+    return re.sub(r"\b([a-z])[\s-]+(?=\d)", r"\1", text.lower())
+
+
 # ---------------------------------------------------------------- intake
 
 class ClaimData(BaseModel):
@@ -149,8 +154,9 @@ def _sanitize(data: dict, text: str) -> dict:
     data["event_date"] = _ground(data.get("event_date"), _dates_in_text(text))
     data["amount"] = _ground(data.get("amount"), _amounts_in_text(text))
     if data.get("device"):
-        text_words = _words(text)
-        data["device"] = " ".join(w for w in data["device"].split() if _words(w) & text_words) or None
+        text_words = _words(text) | _words(_join_model_numbers(text))
+        data["device"] = " ".join(w for w in data["device"].split()
+                                  if _words(_join_model_numbers(w)) & text_words) or None
     return data
 
 
@@ -200,7 +206,30 @@ def route_after_intake(state: ClaimState) -> Literal["ask_missing", "check_polic
 
 # ---------------------------------------------------------------- policy check
 
-GENERIC_WORDS = {"phone", "smartphone", "mobile", "cell", "laptop", "notebook", "computer", "device", "my", "new"}
+GENERIC_WORDS = {"phone", "smartphone", "mobile", "cell", "laptop", "notebook", "computer", "device", "my", "new",
+                 "5g", "4g", "lte"}
+# Words that tell variants of one model apart ("iPhone 15" vs "iPhone 15 Pro", "Galaxy S24" vs "Galaxy S24 Ultra").
+VARIANT_WORDS = {"pro", "max", "plus", "ultra", "mini", "air", "lite", "fe", "edge", "fold", "flip", "note",
+                 "carbon", "nano", "yoga", "slim"}
+STORAGE_RE = re.compile(r"^\d+(?:gb|tb)$")
+
+
+def _model_tokens(text: str) -> set[str]:
+    return {w for w in _words(_join_model_numbers(text)) - GENERIC_WORDS if not STORAGE_RE.match(w)}
+
+
+def _identifies_model(token: str) -> bool:
+    return any(ch.isdigit() for ch in token) or token in VARIANT_WORDS
+
+
+def device_matches(claimed: str, insured: dict) -> bool:
+    """Brand and series words are optional, but every model number and variant word of the insured device
+    must be in the claim, and the claim may not name a model number or variant the policy doesn't have."""
+    insured_tokens = _model_tokens(f"{insured['brand']} {insured['model']}")
+    claimed_tokens = _model_tokens(claimed)
+    required = {t for t in insured_tokens if _identifies_model(t)}
+    foreign = {t for t in claimed_tokens - insured_tokens if _identifies_model(t)}
+    return bool(claimed_tokens & insured_tokens) and required <= claimed_tokens and not foreign
 
 
 def completed_years(start: date, end: date) -> int:
@@ -225,10 +254,9 @@ def check_policy_tool(policy_number: str, event_date: str, device: str = "", dev
         errors.append([2, f"Incident on {event} is outside the coverage period {start} – {end}."])
 
     insured = policy["device"]
-    claimed_words = _words(device) - GENERIC_WORDS
     # llama3.2 often gets device_type wrong, so brand/model wins and the type is only used when no model is named.
-    if claimed_words:
-        mismatch = not claimed_words & _words(f"{insured['brand']} {insured['model']}")
+    if _model_tokens(device):
+        mismatch = not device_matches(device, insured)
     else:
         mismatch = bool(device_type and device_type != insured["type"])
     if mismatch:
@@ -349,16 +377,19 @@ def check_coverage(state: ClaimState):
         print(f"[coverage] LLM error: {e}")
         coverage = {"reasoning": f"Model error: {e}", "article": articles[0]["article"], "covered": None}
 
-    # llama3.2 cites articles it was never shown and contradicts itself ("covered under Article 3",
-    # covered=false). The cited article must be a retrieved one, and a pure cover/exclusion article
-    # fixes the verdict; only the mixed article relies on the model.
     retrieved = [a["article"] for a in articles]
+    coverage["retrieved_articles"] = retrieved
+    # llama3.2 cites articles it was never shown. Such an answer is not grounded in the context, so its
+    # verdict is discarded and decide() escalates the claim to an assessor instead of guessing an article.
     if coverage["article"] not in retrieved:
-        coverage["article"] = retrieved[0]
+        coverage["invalid_citation"] = coverage["article"]
+        coverage["covered"] = None
+        return {"coverage": coverage}
+    # It also contradicts itself ("covered under Article 3", covered=false): a pure cover/exclusion
+    # article fixes the verdict; only the mixed article relies on the model.
     role = COVERAGE_ARTICLES[coverage["article"]]
     if role != "mixed" and coverage["covered"] is not None:
         coverage["covered"] = role == "cover"
-    coverage["retrieved_articles"] = retrieved
     return {"coverage": coverage}
 
 
@@ -409,10 +440,16 @@ def decide(state: ClaimState):
         reasons.append(f"amount €{c['amount']} exceeds €{ESCALATION_AMOUNT}")
     if pc["days_since_start"] < ESCALATION_DAYS:
         reasons.append(f"incident {pc['days_since_start']} days after policy start (< {ESCALATION_DAYS})")
-    if coverage["covered"] is None:
+    if "invalid_citation" in coverage:
+        reasons.append(f"model cited Article {coverage['invalid_citation']}, which is not in the retrieved "
+                       f"context (Articles {', '.join(map(str, coverage['retrieved_articles']))})")
+    elif coverage["covered"] is None:
         reasons.append("coverage could not be checked automatically")
 
-    basis = f"Covered under Article {coverage['article']}: {coverage['reasoning']} {calc_text}"
+    if coverage["covered"] is None:
+        basis = f"Coverage not verified (model: {coverage['reasoning']}) {calc_text}"
+    else:
+        basis = f"Covered under Article {coverage['article']}: {coverage['reasoning']} {calc_text}"
     if reasons:
         return {"decision": ESCALATION, "system_decision": ESCALATION, "payout": calc["payout"],
                 "calculation": calc, "article": 10, "escalation_reasons": reasons,
