@@ -138,3 +138,26 @@ def test_citation_outside_context_is_escalated(fake_llm, run, cited):
     assert any(f"Article {cited}" in reason and "retrieved" in reason for reason in r["escalation_reasons"])
     # The assessor has the last word: here they reject, so nothing is paid out.
     assert (r["decision"], r["payout"]) == (main.REJECTED, 0)
+
+
+# ---------------------------------------------------------------- own edge case
+#
+# Case:      a covered repair (€40) that costs less than the policy's deductible (€50).
+#            In the 15 original claims the recognized amount is always above the deductible.
+# Expected:  APPROVED, €0, Article 3: the damage is covered, but under Article 8
+#            nothing is paid out when the recognized amount is lower than the deductible.
+# Current:   handled correctly: calculate_payout limits the payout to 0, so it can't go negative.
+
+
+def test_claim_below_deductible_pays_nothing(fake_llm, run):
+    fake = fake_llm(
+        claim_data(policy_number="POL-1001", device="Samsung Galaxy S24", device_type="phone",
+                   event_date="2026-06-10", damage_type="physical_damage",
+                   description="The phone fell and the screen cracked.", amount=40),
+        coverage(3, True),
+    )
+    r = run("Policy POL-1001. On 10 June 2026 my Samsung Galaxy S24 fell on the pavement "
+            "and the screen cracked. The repair costs €40.")
+    assert (r["system_decision"], r["payout"], r["article"]) == (main.APPROVED, 0, 3)
+    assert r["calculation"]["recognized"] == 40
+    assert unused_answers(fake) == []
